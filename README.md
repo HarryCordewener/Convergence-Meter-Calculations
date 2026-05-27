@@ -2,6 +2,9 @@
 
 A tool for tabletop RPG designers to balance plot advancement mechanics. Given a **2d10 + modifier** dice system with tiered success thresholds, it recommends **Total Points** values for any **Target Number** that achieve a desired probability of party success.
 
+# Quick Use
+Navigate to https://harrycordewener.github.io/Convergence-Meter-Calculations/ for an online javascript version.
+
 ## The System
 
 Each round, every player rolls 2d10 + modifier against a Target Number:
