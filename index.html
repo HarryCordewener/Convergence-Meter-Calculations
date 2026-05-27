@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plot Meter Calculator — Convergence MUSH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Francois+One&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Open Sans", Arial, sans-serif;
+  color: #fcfaf9;
+  min-height: 100vh;
+  /* Diamond/argyle pattern matching convergencemush.org */
+  background-color: #0c1a26;
+  background-image:
+    conic-gradient(from -60deg at 50% 33.33%, #061329 0deg, #061329 120deg, transparent 0deg),
+    conic-gradient(from 120deg at 50% 66.67%, #061329 0deg, #061329 120deg, transparent 0deg),
+    conic-gradient(from 60deg at 66.67% 50%, #061329 60deg, #122739 0deg, #122739 120deg, transparent 0deg),
+    conic-gradient(from 180deg at 33.33% 50%, #0c1a26 60deg, #061329 0deg, #061329 120deg, transparent 0deg),
+    linear-gradient(90deg, #0c1a26 16.67%, #122739 0px, #122739 50%, #0c1a26 0px, #0c1a26 83.33%, #122739 0px);
+  background-size: 80px 46px;
+}
+
+header {
+  background: linear-gradient(120deg, #023059, #054f8a);
+  padding: 1.2rem 2rem;
+  text-align: center;
+  border-bottom: 1px dotted #f5e6eb;
+}
+
+header h1 {
+  font-family: "Francois One", Arial, sans-serif;
+  font-size: 2.2rem;
+  font-weight: normal;
+  letter-spacing: 0.5px;
+}
+
+header p {
+  margin-top: 0.4rem;
+  opacity: 0.8;
+  font-size: 0.9rem;
+}
+
+main {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1.5rem 2rem;
+  background: #023059;
+  border: 1px dotted #f5e6eb;
+  border-radius: 4px;
+}
+
+h2 {
+  font-family: "Francois One", Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: normal;
+  margin-bottom: 1rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.field input {
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #2a6090;
+  border-radius: 3px;
+  background: #0c1a26;
+  color: #fcfaf9;
+  font-family: "Open Sans", Arial, sans-serif;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: #5ab0e8;
+  box-shadow: 0 0 0 2px rgba(90, 176, 232, 0.25);
+}
+
+button#calculate {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 1.5rem;
+  font-family: "Francois One", Arial, sans-serif;
+  font-size: 1.2rem;
+  font-weight: normal;
+  letter-spacing: 0.5px;
+  color: #fcfaf9;
+  background: linear-gradient(135deg, #054f8a, #0770b8);
+  border: 1px solid #5ab0e8;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+button#calculate:hover {
+  background: linear-gradient(135deg, #0770b8, #0990dd);
+}
+
+button#calculate:active {
+  transform: scale(0.98);
+}
+
+#output {
+  margin-top: 1.5rem;
+}
+
+#output h3 {
+  font-family: "Francois One", Arial, sans-serif;
+  font-size: 1.2rem;
+  font-weight: normal;
+  margin-bottom: 0.8rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+thead th {
+  text-align: right;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 2px solid #5ab0e8;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+tbody td {
+  text-align: right;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid rgba(90, 176, 232, 0.2);
+}
+
+tbody tr:hover {
+  background: rgba(90, 176, 232, 0.08);
+}
+
+/* Highlight sweet-spot rows */
+tbody tr.sweet-spot {
+  background: rgba(90, 176, 232, 0.15);
+}
+
+tbody tr.sweet-spot td:last-child {
+  color: #7dd3fc;
+  font-weight: 700;
+}
+
+.error {
+  color: #f87171;
+  font-weight: 600;
+  margin-top: 1rem;
+}
+
+footer {
+  text-align: center;
+  padding: 1.5rem;
+  opacity: 0.5;
+  font-size: 0.8rem;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Plot Meter Calculator</h1>
+  <p>2d10 + modifier system — recommend TN/PN pairs for group challenges</p>
+</header>
+
+<main>
+  <h2>Parameters</h2>
+  <div class="form-grid">
+    <div class="field">
+      <label for="players">Players (N)</label>
+      <input type="number" id="players" value="4" min="1" max="20">
+    </div>
+    <div class="field">
+      <label for="rounds">Rounds (Y)</label>
+      <input type="number" id="rounds" value="5" min="1" max="50">
+    </div>
+    <div class="field">
+      <label for="probability">Success % (X)</label>
+      <input type="number" id="probability" value="75" min="1" max="99" step="1">
+    </div>
+    <div class="field">
+      <label for="modifier">Modifier (M)</label>
+      <input type="number" id="modifier" value="4" min="-10" max="20">
+    </div>
+  </div>
+  <button id="calculate">Calculate</button>
+
+  <div id="output"></div>
+</main>
+
+<footer>
+  Convergence MUSH — Plot Meter Calculator
+</footer>
+
+<script>
+// Normal inverse CDF (rational approximation, Abramowitz & Stegun 26.2.23)
+function normInv(p) {
+  if (p <= 0) return -Infinity;
+  if (p >= 1) return Infinity;
+  if (p < 0.5) return -normInv(1 - p);
+  const t = Math.sqrt(-2 * Math.log(1 - p));
+  const c0 = 2.515517, c1 = 0.802853, c2 = 0.010328;
+  const d1 = 1.432788, d2 = 0.189269, d3 = 0.001308;
+  return t - (c0 + c1*t + c2*t*t) / (1 + d1*t + d2*t*t + d3*t*t*t);
+}
+
+function rollProbability(modifier) {
+  const probs = {};
+  for (let i = 1; i <= 10; i++) {
+    for (let j = 1; j <= 10; j++) {
+      const total = i + j + modifier;
+      probs[total] = (probs[total] || 0) + 1;
+    }
+  }
+  for (const k in probs) probs[k] /= 100;
+  return probs;
+}
+
+function cumulativeProbs(probs) {
+  const keys = Object.keys(probs).map(Number).sort((a,b) => a - b);
+  const cdf = {};
+  let cum = 0;
+  for (const k of keys) {
+    cum += probs[k];
+    cdf[k] = cum;
+  }
+  return cdf;
+}
+
+function cdfLookup(cdf, k) {
+  const keys = Object.keys(cdf).map(Number).sort((a,b) => a - b);
+  if (k < keys[0]) return 0;
+  if (k > keys[keys.length - 1]) return 1;
+  return cdf[k] || 0;
+}
+
+function expectedPoints(TN, cdf) {
+  const p1 = 1 - cdfLookup(cdf, TN - 1);
+  const p2 = 1 - cdfLookup(cdf, TN + 4);
+  const p3 = 1 - cdfLookup(cdf, TN + 9);
+  return p1 + p2 + p3;
+}
+
+function variancePoints(TN, cdf) {
+  const p1 = 1 - cdfLookup(cdf, TN - 1);
+  const p2 = 1 - cdfLookup(cdf, TN + 4);
+  const p3 = 1 - cdfLookup(cdf, TN + 9);
+  const ex = p1 + p2 + p3;
+  const ex2 = p1 + 3*p2 + 5*p3;
+  return Math.max(0, ex2 - ex*ex);
+}
+
+function calculate() {
+  const N = parseInt(document.getElementById('players').value);
+  const Y = parseInt(document.getElementById('rounds').value);
+  const X = parseInt(document.getElementById('probability').value) / 100;
+  const modifier = parseInt(document.getElementById('modifier').value);
+  const output = document.getElementById('output');
+
+  if (isNaN(N) || isNaN(Y) || isNaN(X) || isNaN(modifier)) {
+    output.innerHTML = '<p class="error">Please fill in all fields with valid numbers.</p>';
+    return;
+  }
+  if (X <= 0 || X >= 1) {
+    output.innerHTML = '<p class="error">Success % must be between 1 and 99.</p>';
+    return;
+  }
+
+  const probs = rollProbability(modifier);
+  const cdf = cumulativeProbs(probs);
+  const keys = Object.keys(probs).map(Number).sort((a,b) => a - b);
+  const minRoll = keys[0], maxRoll = keys[keys.length - 1];
+
+  const z = normInv(1 - X);
+
+  let rows = [];
+  for (let TN = minRoll; TN <= maxRoll; TN++) {
+    const mu = expectedPoints(TN, cdf);
+    const v = variancePoints(TN, cdf);
+    const totalMu = N * Y * mu;
+    const totalStd = Math.sqrt(N * Y * v);
+    const PN = totalMu + z * totalStd;
+    rows.push({ TN, mu, totalMu, totalStd, PN });
+  }
+
+  let html = `<h3>2d10 + ${modifier} | ${N} Players | ${Y} Rounds | ${Math.round(X*100)}% Success</h3>`;
+  html += '<table><thead><tr>';
+  html += '<th>Target Number</th><th>Avg pts/roll</th><th>Avg total</th><th>Swing</th><th>Total Points (PN)</th>';
+  html += '</tr></thead><tbody>';
+
+  for (const r of rows) {
+    const pnStr = r.PN < 1 ? '&lt;1' : r.PN.toFixed(1);
+    const isSweetSpot = r.PN >= 1 && r.mu > 0.5;
+    html += `<tr${isSweetSpot ? ' class="sweet-spot"' : ''}>`;
+    html += `<td>${r.TN}</td>`;
+    html += `<td>${r.mu.toFixed(3)}</td>`;
+    html += `<td>${r.totalMu.toFixed(2)}</td>`;
+    html += `<td>${r.totalStd.toFixed(2)}</td>`;
+    html += `<td>${pnStr}</td>`;
+    html += '</tr>';
+  }
+
+  html += '</tbody></table>';
+  output.innerHTML = html;
+}
+
+document.getElementById('calculate').addEventListener('click', calculate);
+// Also calculate on Enter in any input
+document.querySelectorAll('input').forEach(el => {
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); });
+});
+
+// Run on load with defaults
+calculate();
+</script>
+</body>
+</html>
